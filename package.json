@@ -9,7 +9,6 @@
   "prepare": "npm run build",
   "prepublishOnly": "npm test && npm run lint",
   "preversion": "npm run lint",
-  "version": "npm run format && git add -A src",
   "homepage": "https://github.com/AdarshPawar29/url-object-converter#readme",
   "description": "It's a convenient npm package that enables conversion between JavaScript objects and URLs. With this package, you can effortlessly transform complex objects into URL-friendly, allowing for easy integration into web applications. Additionally, it provides robust parsing capabilities to efficiently convert URLs back into their original object forms.",
   "main": "lib/index.js",
@@ -22,6 +21,7 @@
     "prepare": "npm run build",
     "prepublishOnly": "npm test && npm run lint",
     "preversion": "npm run lint",
+    "version": "npm run format && git add -A src",
     "postversion": "git push && git push --tags"
   },
   "keywords": [

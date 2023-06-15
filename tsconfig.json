@@ -4,8 +4,9 @@
     "module": "commonjs",
     "declaration": true,
     "outDir": "./lib",
-    "strict": true
+    "strict": true,
+    "downlevelIteration": true
   },
-  "include": ["src"],
+  "include": ["src", "src/__tests__/.test.ts", "src/__tests__/.test.ts"],
   "exclude": ["node_modules", "**/__tests__/*"]
 }
