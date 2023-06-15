@@ -33,7 +33,7 @@ export function rearrangeObject(originalObj: any) {
   for (const key in newObj.criteria) {
     if (key.includes('[') && key.includes(']')) {
       const [propName, index] = key.split('[');
-      const arrayIndex = parseInt(index.replace(']', ''));
+      const arrayIndex = parseInt(index.replace(']', ''), 10);
 
       if (!newObj.criteria[propName]) {
         newObj.criteria[propName] = [];
