@@ -30,17 +30,17 @@ export const convertObjectToUrl = (obj: any, prefix = ''): string => {
 export function rearrangeObject(originalObj: any) {
   const newObj = { ...originalObj };
 
-  for (const key in newObj.criteria) {
+  for (const key in newObj) {
     if (key.includes('[') && key.includes(']')) {
       const [propName, index] = key.split('[');
       const arrayIndex = parseInt(index.replace(']', ''), 10);
 
-      if (!newObj.criteria[propName]) {
-        newObj.criteria[propName] = [];
+      if (!newObj[propName]) {
+        newObj[propName] = [];
       }
 
-      newObj.criteria[propName][arrayIndex] = newObj.criteria[key];
-      delete newObj.criteria[key];
+      newObj[propName][arrayIndex] = newObj[key];
+      delete newObj[key];
     }
   }
 
