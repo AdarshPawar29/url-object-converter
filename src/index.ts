@@ -9,17 +9,22 @@ export const convertObjectToUrl = (obj: any, prefix = ''): string => {
       if (Array.isArray(value)) {
         for (let i = 0; i < value.length; i++) {
           const item = value[i];
+          const itemPrefix = `${newKey}[${i}]`;
 
           if (typeof item === 'object' && item !== null) {
-            params.push(convertObjectToUrl(item, `${newKey}[${i}]`));
-          } else if (item !== undefined && item !== null && item !== '') {
-            params.push(`${encodeURIComponent(`${newKey}[${i}]`)}=${encodeURIComponent(item)}`);
+            params.push(convertObjectToUrl(item, itemPrefix));
+          } else if (item !== undefined && item !== '') {
+            const encodedKey = encodeURIComponent(itemPrefix);
+            const encodedValue = encodeURIComponent(item === null ? 'null' : item);
+            params.push(`${encodedKey}=${encodedValue}`);
           }
         }
       } else if (typeof value === 'object' && value !== null) {
         params.push(convertObjectToUrl(value, newKey));
-      } else if (value !== undefined && value !== null && value !== '') {
-        params.push(`${encodeURIComponent(newKey)}=${encodeURIComponent(value)}`);
+      } else if (value !== undefined && value !== '') {
+        const encodedKey = encodeURIComponent(newKey);
+        const encodedValue = encodeURIComponent(value === null ? 'null' : value);
+        params.push(`${encodedKey}=${encodedValue}`);
       }
     }
   }
@@ -27,25 +32,14 @@ export const convertObjectToUrl = (obj: any, prefix = ''): string => {
   return params.join('&');
 };
 
-export function rearrangeObject(originalObj: any) {
-  const newObj = { ...originalObj };
-
-  for (const key in newObj) {
-    if (key.includes('[') && key.includes(']')) {
-      const [propName, index] = key.split('[');
-      const arrayIndex = parseInt(index.replace(']', ''), 10);
-
-      if (!newObj[propName]) {
-        newObj[propName] = [];
-      }
-
-      newObj[propName][arrayIndex] = newObj[key];
-      delete newObj[key];
-    }
-  }
-
-  return newObj;
-}
+const parseValue = (value: string): any => {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  if (value === 'null') return null;
+  if (/^-?\d+$/.test(value)) return parseInt(value, 10);
+  if (/^-?\d+\.\d+$/.test(value)) return parseFloat(value);
+  return value;
+};
 
 export const convertUrlToObject = (urlQueryString: string): any => {
   const params = new URLSearchParams(urlQueryString);
@@ -53,33 +47,67 @@ export const convertUrlToObject = (urlQueryString: string): any => {
 
   for (const [key, value] of params.entries()) {
     const keys = key.split('.');
-    let nestedObj = obj;
+    let currentObj = obj;
 
     for (let i = 0; i < keys.length; i++) {
-      const currentKey = decodeURIComponent(keys[i]);
-      const decodedValue = decodeURIComponent(value);
+      const currentKeyPart = decodeURIComponent(keys[i]);
+      const isLastPart = i === keys.length - 1;
+      const arrayMatch = currentKeyPart.match(/^([^\[]+)\[(\d+)\]$/);
 
-      if (i === keys.length - 1) {
-        const isArrayItem = currentKey.endsWith(']');
+      if (arrayMatch) {
+        const arrayKey = arrayMatch[1];
+        const arrayIndex = parseInt(arrayMatch[2], 10);
 
-        if (isArrayItem) {
-          const arrayKey = currentKey.substring(0, currentKey.indexOf('['));
-          const index = currentKey.substring(currentKey.indexOf('[') + 1, currentKey.indexOf(']'));
-          if (!nestedObj[arrayKey]) {
-            nestedObj[arrayKey] = [];
-          }
-          nestedObj[arrayKey][index] = decodedValue;
+        if (!Array.isArray(currentObj[arrayKey])) {
+          currentObj[arrayKey] = [];
+        }
+
+        while (currentObj[arrayKey].length <= arrayIndex) {
+          currentObj[arrayKey].push(undefined);
+        }
+
+        let element = currentObj[arrayKey][arrayIndex];
+        if (element === undefined && !isLastPart) {
+          element = {};
+          currentObj[arrayKey][arrayIndex] = element;
+        }
+
+        if (isLastPart) {
+          currentObj[arrayKey][arrayIndex] = parseValue(decodeURIComponent(value));
         } else {
-          nestedObj[currentKey] = decodedValue;
+          currentObj = element;
         }
       } else {
-        if (!nestedObj[currentKey]) {
-          nestedObj[currentKey] = {};
+        if (isLastPart) {
+          currentObj[currentKeyPart] = parseValue(decodeURIComponent(value));
+        } else {
+          if (typeof currentObj[currentKeyPart] !== 'object' || currentObj[currentKeyPart] === null) {
+            currentObj[currentKeyPart] = {};
+          }
+          currentObj = currentObj[currentKeyPart];
         }
-        nestedObj = nestedObj[currentKey];
       }
     }
   }
 
-  return rearrangeObject(obj);
+  // Recursively convert objects with numeric keys to arrays
+  const convertNumericKeyObjectsToArrays = (inputObj: any): any => {
+    if (Array.isArray(inputObj)) {
+      return inputObj.map((item) => convertNumericKeyObjectsToArrays(item));
+    } else if (typeof inputObj === 'object' && inputObj !== null) {
+      const keys = Object.keys(inputObj);
+      if (keys.every((k) => /^\d+$/.test(k))) {
+        return keys.map((k) => convertNumericKeyObjectsToArrays(inputObj[k]));
+      } else {
+        const newObj: any = {};
+        for (const key of keys) {
+          newObj[key] = convertNumericKeyObjectsToArrays(inputObj[key]);
+        }
+        return newObj;
+      }
+    }
+    return inputObj;
+  };
+
+  return convertNumericKeyObjectsToArrays(obj);
 };

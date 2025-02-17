@@ -1,101 +1,58 @@
-import { convertUrlToObject, rearrangeObject } from '../index';
+import { convertUrlToObject } from '../index';
 
 describe('convertUrlToObject', () => {
-  test('should handle URL query string with duplicate keys', () => {
-    const urlQueryString = 'name%5B0%5D=John&name%5B1%5D=Jane&age%5B0%5D=30&age%5B1%5D=25';
-    const result = rearrangeObject(convertUrlToObject(urlQueryString));
-
-    const expectedObject = {
-      name: ['John', 'Jane'],
-      age: ['30', '25'],
-    };
-
-    expect(result).toEqual(expectedObject);
-  });
-
-  test('should handle URL query string with empty values', () => {
-    const urlQueryString = 'age=30&address.country=USA';
-    const result = convertUrlToObject(urlQueryString);
-    const expectedObject = {
-      age: '30',
-      address: {
-        country: 'USA',
-      },
-    };
-    expect(result).toEqual(expectedObject);
-  });
-});
-
-describe('rearrangeObject', () => {
-  test('should handle empty object', () => {
-    const originalObj = {};
-    const result = rearrangeObject(originalObj);
-    const expectedObject = {};
-    expect(result).toEqual(expectedObject);
-  });
-
-  test('should handle object with no properties containing array index notation', () => {
-    const originalObj = {
+  test('converts a URL-encoded string to a simple object', () => {
+    const url = 'name=John&age=30';
+    const obj = convertUrlToObject(url);
+    expect(obj).toEqual({
       name: 'John',
-      age: '30',
-      address: {
-        city: 'New York',
-        country: 'USA',
-      },
-    };
-    const result = rearrangeObject(originalObj);
-    const expectedObject = {
-      name: 'John',
-      age: '30',
-      address: {
-        city: 'New York',
-        country: 'USA',
-      },
-    };
-    expect(result).toEqual(expectedObject);
+      age: 30,
+    });
   });
-  //TODO: Need to work on this, use this object as a reference
-  //   const testObject = {
-  //     data: {
-  //       items: [
-  //         {
-  //           id: 1,
-  //           name: 'Item 1',
-  //         },
-  //         {
-  //           id: 2,
-  //           name: 'Item 2',
-  //         },
-  //       ],
-  //     },
-  //   };
-  //   test('should handle object with nested properties containing array index notation', () => {
-  //     const originalObj = {
-  //       data: {
-  //         'items[0].id': '1',
-  //         'items[0].name': 'Item 1',
-  //         'items[1].id': '2',
-  //         'items[1].name': 'Item 2',
-  //       },
-  //     };
 
-  //     const result = rearrangeObject(originalObj);
+  test('converts a URL-encoded string with nested objects', () => {
+    const url = 'user.name=Alice&user.details.age=25&user.details.isAdmin=false';
+    const obj = convertUrlToObject(url);
+    expect(obj).toEqual({
+      user: {
+        name: 'Alice',
+        details: {
+          age: 25,
+          isAdmin: false,
+        },
+      },
+    });
+  });
 
-  //     const expectedObject = {
-  //       data: {
-  //         items: [
-  //           {
-  //             id: 1,
-  //             name: 'Item 1',
-  //           },
-  //           {
-  //             id: 2,
-  //             name: 'Item 2',
-  //           },
-  //         ],
-  //       },
-  //     };
+  test('converts a URL-encoded string with arrays', () => {
+    const url =
+      'hobbies%5B0%5D=reading&hobbies%5B1%5D=painting&hobbies%5B2%5D=coding&scores%5B0%5D=95&scores%5B1%5D=82&scores%5B2%5D=88';
+    const obj = convertUrlToObject(url);
+    expect(obj).toEqual({
+      hobbies: ['reading', 'painting', 'coding'],
+      scores: [95, 82, 88],
+    });
+  });
 
-  //     expect(result).toEqual(expectedObject);
-  //   });
+  test('converts a URL-encoded string with sparse arrays', () => {
+    const url = 'sparseArray%5B0%5D=1&sparseArray%5B2%5D=3';
+    const obj = convertUrlToObject(url);
+    expect(obj).toEqual({
+      sparseArray: [1, undefined, 3],
+    });
+  });
+
+  test('converts a URL-encoded string with mixed data types', () => {
+    const url = 'name=John&age=30&isStudent=false&metadata.created=2023-10-01&metadata.updated=null';
+    const obj = convertUrlToObject(url);
+    expect(obj).toEqual({
+      name: 'John',
+      age: 30,
+      isStudent: false,
+      metadata: {
+        created: '2023-10-01',
+        updated: null,
+      },
+    });
+  });
 });
