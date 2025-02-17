@@ -1,6 +1,4 @@
-Here’s the updated and SEO-friendly README for your `url-object-converter` package. It highlights the improvements, edge cases, and features in a way that makes it easy for users to find and understand the package's capabilities.
 
----
 
 # URL-Object-Converter
 
